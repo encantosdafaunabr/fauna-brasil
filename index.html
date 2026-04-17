@@ -133,6 +133,7 @@
 
         .msg-user { color: var(--primary); font-weight: bold; text-align: right; margin-bottom: 10px; }
         .msg-bot { color: #fff; border-left: 2px solid var(--primary); padding-left: 10px; margin-bottom: 10px; white-space: pre-wrap; }
+        .msg-error { color: #ff5555; border-left: 2px solid #ff5555; padding-left: 10px; margin-bottom: 10px; font-size: 12px; }
 
         .input-group { display: flex; flex-direction: column; gap: 8px; }
 
@@ -195,7 +196,9 @@
     const p1 = "AQ.Ab8RN6Ip9tT"; 
     const p2 = "jmvIHd8U1p0FXaYNccY4uLYrAvV14RAvbEb0PlA"; 
     const apiKey = p1 + p2; 
-    const model = "gemini-2.5-flash-preview-09-2025";
+    
+    // ATENÇÃO: Se continuar a falhar, tente mudar para: gemini-1.5-flash
+    const model = "gemini-1.5-flash";
 
     const animais = ["Poraquê", "Urutau", "Sapo-de-Vidro", "Lobo-Guará", "Onça-Pintada", "Boto-Cor-de-Rosa", "Ariranha", "Gavião-Real", "Tamanduá-Bandeira", "Tatu-Bola", "Jacaré-Açu", "Surucucu", "João-de-Barro", "Peixe-Boi", "Jararaca-Ilhoa", "Sucuri-Verde", "Preguiça-Real", "Arara-Azul", "Mico-Leão-Dourado", "Tucano-Toco"];
     
@@ -222,10 +225,18 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+            
             const data = await response.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "Lamento, não consegui obter essa informação agora.";
+            
+            if (!response.ok) {
+                console.error("Erro detalhado da API:", data);
+                return `Erro técnico: ${data.error?.message || 'Falha na comunicação'}`;
+            }
+
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "A IA não gerou uma resposta válida.";
         } catch (e) {
-            return "Erro ao ligar à IA. Verifique a sua chave.";
+            console.error("Erro na requisição:", e);
+            return "Erro de rede: Verifique a sua ligação ou a chave da API.";
         }
     }
 
@@ -234,7 +245,8 @@
 
     function addMessage(text, type) {
         const div = document.createElement('div');
-        div.className = `msg-${type}`;
+        // Se o texto começar com "Erro", usa um estilo diferente
+        div.className = text.startsWith("Erro") ? "msg-error" : `msg-${type}`;
         div.innerText = text;
         chatArea.appendChild(div);
         chatArea.scrollTop = chatArea.scrollHeight;
